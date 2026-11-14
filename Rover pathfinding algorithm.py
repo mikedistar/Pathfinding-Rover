@@ -32,22 +32,42 @@ ax1.zaxis.set_major_locator(LinearLocator(6))
 ax1.contour(X, Y, Z)
 
 # A test line (replace with the calculated path)
-path_line3D, = ax1.plot(x, x, f(x,x), "--", color="red", linewidth=3, axlim_clip=True, zorder=4)
+path_line3D, = ax1.plot(0, 0, 0, "--", color="red", linewidth=3, axlim_clip=True, zorder=4)
 
 # Create the 2-D contour plot
 ax2.imshow(Z, interpolation="bilinear", extent=(-5,5,-5,5))
 ax2.contour(X, Y, Z, colors="black")
 
 # Plotting a test line (replace with the calculated path)
-path_line2D, = ax2.plot(x,x, "--", color="red", linewidth=3)
+path_line2D, = ax2.plot(0, 0, "--", color="red", linewidth=3)
 
 # A list of the end points of the pathfinding
 #   [0] => Start
 #   [1] => End
 extrema = [(2,0), (1,1)]
 
-extrema_scatter2D = ax2.scatter([x[0] for x in extrema], [x[1] for x in extrema], facecolors=["red", "blue"], alpha=1)
-extrema_scatter3D = ax1.scatter([x[0] for x in extrema], [x[1] for x in extrema], [f(x[0],x[1]) for x in extrema], facecolors=["red", "blue"], alpha=1, zorder=4)
+extrema_scatter2D = ax2.scatter([0,0], [0,0], facecolors=["blue", "red"], alpha=1)
+extrema_scatter3D = ax1.scatter([0,0], [0,0], [0,0], facecolors=["blue", "red"], alpha=1, zorder=4)
+
+def plotPath(path):
+    xs = [p[0] for p in path]
+    ys = [p[1] for p in path]
+
+    # Update the end points on the plot
+    extrema_scatter2D.set_offsets([path[0], path[-1]])
+    extrema_scatter3D._offsets3d = (xs, ys, f(xs, ys))
+
+    # Create a list of the points in the path
+    path2D = [xs, ys]
+    path3D = [xs, ys, f(xs, ys)]
+
+    # Update the line
+    path_line2D.set_data(path2D)
+    path_line3D.set_data_3d(path3D)
+    fig.canvas.draw()
+
+# Make sure that the paths are plotted correct when starting the program
+plotPath(extrema)
 
 def on_click(event):
     if event.inaxes != ax2:
@@ -60,21 +80,7 @@ def on_click(event):
         # Update end point
         extrema[1] = (event.xdata, event.ydata)
 
-    xs = [p[0] for p in extrema]
-    ys = [p[1] for p in extrema]
-
-    # Update the end points on the plot
-    extrema_scatter2D.set_offsets(extrema)
-    extrema_scatter3D._offsets3d = (xs, ys, f(xs, ys))
-
-    # Create a list of the points in the path
-    path2D = [xs, ys]
-    path3D = [xs, ys, f(xs, ys)]
-
-    # Update the line
-    path_line2D.set_data(path2D)
-    path_line3D.set_data_3d(path3D)
-    fig.canvas.draw()
+    plotPath(extrema)
 
 plt.connect("button_press_event", on_click)
 
