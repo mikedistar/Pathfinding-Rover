@@ -6,6 +6,8 @@ import numpy as np
 
 from matplotlib.ticker import LinearLocator
 
+from aStar import a_star_search
+
 fig = plt.figure()
 
 ax1 = fig.add_subplot(121, projection='3d')
@@ -38,6 +40,8 @@ path_line3D, = ax1.plot(0, 0, 0, "--", color="red", linewidth=3, axlim_clip=True
 ax2.imshow(Z, interpolation="bilinear", extent=(-5,5,-5,5))
 ax2.contour(X, Y, Z, colors="black")
 
+show = ax2.scatter([], [], color = "cyan")
+
 # Plotting a test line (replace with the calculated path)
 path_line2D, = ax2.plot(0, 0, "--", color="red", linewidth=3)
 
@@ -49,13 +53,23 @@ extrema = [(2,0), (1,1)]
 extrema_scatter2D = ax2.scatter([0,0], [0,0], facecolors=["blue", "red"], alpha=1)
 extrema_scatter3D = ax1.scatter([0,0], [0,0], [0,0], facecolors=["blue", "red"], alpha=1, zorder=4)
 
+def getPointIndex(px, py):
+    # Assuming that x and y are linear, which they should be
+    x_index = round((px - x[0]) / 0.1)
+    y_index = round((py - y[0]) / 0.1)
+
+    return x_index, y_index
+
+def get_coords(i, j):
+    return (x[i], y[j])
+
 def plotPath(path):
     xs = [p[0] for p in path]
     ys = [p[1] for p in path]
 
     # Update the end points on the plot
     extrema_scatter2D.set_offsets([path[0], path[-1]])
-    extrema_scatter3D._offsets3d = (xs, ys, f(xs, ys))
+    extrema_scatter3D._offsets3d = ([xs[0], xs[-1]], [ys[0], ys[-1]], f([xs[0], xs[-1]], [ys[0], ys[-1]]))
 
     # Create a list of the points in the path
     path2D = [xs, ys]
@@ -73,6 +87,9 @@ def on_click(event):
     if event.inaxes != ax2:
         return
 
+    if not event.button == MouseButton.LEFT and not event.button == MouseButton.RIGHT:
+        return
+
     if event.button == MouseButton.LEFT:
         # Update start point
         extrema[0] = (event.xdata, event.ydata)
@@ -80,7 +97,21 @@ def on_click(event):
         # Update end point
         extrema[1] = (event.xdata, event.ydata)
 
-    plotPath(extrema)
+    # Snap the points to grid
+    start = getPointIndex(extrema[0][0], extrema[0][1])
+    end = getPointIndex(extrema[1][0], extrema[1][1])
+
+    # Update the extrema
+    extrema[0] = (x[start[0]], y[start[1]])
+    extrema[1] = (x[end[0]], y[end[1]])
+
+    show.set_offsets(np.empty((0, 2)))
+
+    # Calculate the path
+    path = a_star_search(len(x), len(y), Z, start, end, get_coords)
+    path = [(x[p[0]], y[p[1]]) for p in path]
+
+    plotPath(path)
 
 plt.connect("button_press_event", on_click)
 
